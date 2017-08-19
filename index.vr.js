@@ -1,23 +1,73 @@
 import React from 'react';
-import { AppRegistry, asset, Pano, Text, View, StyleSheet } from 'react-vr';
-import Shape from './vr/components/shape';
+import { AppRegistry, asset, Pano, Text, View, StyleSheet, AsyncStorage } from 'react-vr';
+import Shape, { shapes } from './vr/components/shape';
 
 class ShapeGame extends React.Component {
   constructor() {
     super();
 
     this.state = {
-      gameShapes: [1, 1, 1, 1]
+      gameShapes: [1, 1, 1, 1],
+      score: 0,
+      specialIndex: 0
     }
   }
+
+componentDidMount () {
+  AsyncStorage.getItem('score')
+    .then(value => {
+      console.log('score is', value);
+      this.setState({ score: value });
+    })
+  this.newGameSet();
+}
+
+pickShape(shapeIndex) {
+  let score = this.state.score;
+  score = this.state.specialIndex === shapeIndex ? score +1 : score -1;
+
+  this.setState({ score: score });
+  this.newGameSet();
+
+  AsyncStorage.setItem('score', score);
+}
+
+newGameSet() {
+  let baseShapeId = Math.floor(Math.random() * shapes.length);
+  let specialShapeId = baseShapeId;
+
+  while (specialShapeId === baseShapeId) {
+    specialShapeId = Math.floor(Math.random() * shapes.length);
+  }
+
+  let newGameShapes = [];
+
+  for (i = 0; i < this.state.gameShapes.length; i++) {
+    newGameShapes[i] = baseShapeId;
+  }
+
+  let specialIndex = Math.floor(Math.random() * newGameShapes.length);
+  newGameShapes[specialIndex] = specialShapeId;
+
+  this.setState({
+    gameShapes: newGameShapes,
+    specialIndex: specialIndex
+  });
+}
+
   render() {
     return (
       <View style={styles.game}>
-        <Text style={styles.text}>Find the odd shape</Text>
+        <Text style={styles.text}>Find the shape that doesnt belong</Text>
+        <Text style={styles.text}>{this.state.score}</Text>
+
         {
           this.state.gameShapes.map((shape, index) => {
             return (
-              <View key={index}>
+              <View
+                key={index}
+                onEnter={ () => this.pickShape(index) }
+              >
                 <Shape
                   shapeNum={shape}
                   colorNum={index}
